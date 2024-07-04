@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Total Rekap Absensi Bulanan{% endblock %}
+
+{% block content %}
+    <h1 class="text-center">Total Rekap Absensi Bulanan</h1>
+    <form method="get" class="form-inline mb-3">
+        <div class="form-group mr-2">
+            <label for="year" class="mr-2">Tahun:</label>
+            <input type="number" id="year" name="year" class="form-control" value="{{ year }}">
+        </div>
+        <div class="form-group mr-2">
+            <label for="month" class="mr-2">Bulan:</label>
+            <input type="number" id="month" name="month" class="form-control" value="{{ month }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Tampilkan</button>
+    </form>
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Kelas</th>
+                <th>Total Hadir</th>
+                <th>Total Alfa</th>
+                <th>Total Izin</th>
+                <th>Total Sakit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ student.nama }}</td>
+                <td>{{ student.kelas }}</td>
+                <td>{{ totals[student.id][0] }}</td>
+                <td>{{ totals[student.id][1] }}</td>
+                <td>{{ totals[student.id][2] }}</td>
+                <td>{{ totals[student.id][3] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('total_rekap', year=year, month=month) }}" class="btn btn-primary mt-3">Print to PDF</a>
+    <a href="{{ url_for('total_rekap') }}" class="btn btn-link mt-3">Kembali</a>
+{% endblock %}

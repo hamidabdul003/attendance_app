@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Absensi</title>
+</head>
+<body>
+    <h1>Update Absensi {{ attendance.student.nama }}</h1>
+    <form method="post">
+        <label>
+            <input type="radio" name="status" value="H" {% if attendance.status == 'H' %}checked{% endif %}> Hadir
+        </label>
+        <label>
+            <input type="radio" name="status" value="A" {% if attendance.status == 'A' %}checked{% endif %}> Tanpa Keterangan
+        </label>
+        <label>
+            <input type="radio" name="status" value="I" {% if attendance.status == 'I' %}checked{% endif %}> Izin
+        </label>
+        <label>
+            <input type="radio" name="status" value="S" {% if attendance.status == 'S' %}checked{% endif %}> Sakit
+        </label>
+        <button type="submit">Update</button>
+    </form>
+    <a href="{{ url_for('rekap') }}">Kembali</a>
+</body>
+</html>

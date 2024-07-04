@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Rekap Absensi Bulanan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Total Rekap Absensi Bulanan</h1>
+    <p>Bulan: {{ month_name }}, Tahun: {{ year }}</p>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Kelas</th>
+                <th>Total Hadir</th>
+                <th>Total Alfa</th>
+                <th>Total Izin</th>
+                <th>Total Sakit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ student.nama }}</td>
+                <td>{{ student.kelas }}</td>
+                <td>{{ totals[student.id][0] }}</td>
+                <td>{{ totals[student.id][1] }}</td>
+                <td>{{ totals[student.id][2] }}</td>
+                <td>{{ totals[student.id][3] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
