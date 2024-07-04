@@ -154,6 +154,24 @@ Pastikan Anda sudah menginstal:
    sudo systemctl restart apache2
    ```
 
+## Sample Images
+
+### login
+![login](sample/login.png)
+
+### Walikelas
+![Sample 1](sample/walas1.png)
+![Sample 2](sample/walas2.png)
+![Sample 2](sample/walas3.png)
+![Sample 2](sample/walas4.png)
+
+### Sekretaris
+![Sample 1](sample/sekre1.png)
+![Sample 1](sample/sekre2.png)
+![Sample 1](sample/sekre3.png)
+![Sample 1](sample/sekre4.png)
+
+
 ## Kontribusi
 Jika Anda ingin berkontribusi pada proyek ini, silakan fork repository ini dan buat pull request dengan perubahan Anda.
 
