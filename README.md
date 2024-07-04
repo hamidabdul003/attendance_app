@@ -5,13 +5,12 @@
 Attendance App adalah aplikasi web untuk mengelola kehadiran siswa. Aplikasi ini memungkinkan walikelas dan sekretaris untuk mencatat kehadiran siswa dan melihat rekap absensi harian dan bulanan.
 
 ## Fitur
-- Formulir absensi harian
-- Rekap absensi harian
-- Rekap absensi bulanan
-- Daftar siswa dengan fitur pencarian dan pagination
-- API endpoint untuk integrasi dengan aplikasi lain
-- Logging aktivitas dan kesalahan
-- Validasi formulir
+- Input kehadiran harian siswa
+- Melihat rekap kehadiran harian dan bulanan
+- Mengelola data siswa (tambah, edit, hapus)
+- Upload data siswa dari file Excel
+- Endpoint API untuk integrasi dengan aplikasi lain
+- Logging aktivitas aplikasi
 
 ## Teknologi
 - Flask
@@ -171,12 +170,11 @@ Pastikan Anda sudah menginstal:
 ![Sample 1](sample/sekre3.png)
 ![Sample 1](sample/sekre4.png)
 
-
 ## Kontribusi
 Jika Anda ingin berkontribusi pada proyek ini, silakan fork repository ini dan buat pull request dengan perubahan Anda.
 
 ## Lisensi
-Proyek ini dilisensikan di bawah lisensi MIT.
+MIT License © 2024 hamidabdul003
 
 ## Kontak
 Untuk pertanyaan atau bantuan lebih lanjut, silakan hubungi:
