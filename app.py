@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response, jsonify, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity, AnonymousIdentity, identity_changed
 from datetime import datetime, date
@@ -6,16 +6,16 @@ from models import db, Student, Attendance, User
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, Email, ValidationError
-import logging
 from logging.handlers import RotatingFileHandler
 from sqlalchemy.orm import Session
-import pdfkit
-import calendar
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, reqparse
-import pandas as pd
-import os
 from werkzeug.utils import secure_filename
+from telegram import Bot
+import pandas as pd
+import matplotlib.pyplot as plt
+import logging, pdfkit, calendar, os, io
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas  # Tambahkan ini
 
 app = Flask(__name__)
 api = Api(app)
@@ -29,7 +29,10 @@ if not app.debug:
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['TELEGRAM_TOKEN'] = 'your-telegram-bot-token'
 db.init_app(app)
+
+bot = Bot(token=app.config['TELEGRAM_TOKEN'])
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -120,7 +123,6 @@ def index():
     students = Student.query.all()
     today = date.today()
     if request.method == 'POST':
-        # Hapus data absensi sebelumnya
         Attendance.query.filter_by(tanggal=today).delete()
         db.session.commit()
         app.logger.info(f'User {current_user.username} cleared attendance for today')
@@ -135,6 +137,7 @@ def index():
             db.session.add(attendance)
         db.session.commit()
         app.logger.info(f'User {current_user.username} updated attendance for today')
+        check_absence_and_notify()
         return redirect(url_for('rekap'))
     return render_template('index.html', students=students, today=today)
 
@@ -145,7 +148,6 @@ def rekap():
     attendances = Attendance.query.filter_by(tanggal=date_value).all()
 
     if request.method == 'POST' and current_user.is_authenticated and (current_user.role == 'walikelas' or current_user.role == 'sekretaris'):
-        # Hapus data absensi pada tanggal yang ditentukan
         Attendance.query.filter_by(tanggal=date_value).delete()
         db.session.commit()
         app.logger.info(f'User {current_user.username} cleared attendance for {date_value}')
@@ -160,6 +162,7 @@ def rekap():
             db.session.add(attendance)
         db.session.commit()
         app.logger.info(f'User {current_user.username} updated attendance for {date_value}')
+        check_absence_and_notify()
         return redirect(url_for('rekap', date=date_value))
 
     if not attendances:
@@ -274,28 +277,30 @@ def handle_exception(e):
 @login_required
 @walikelas_permission.require(http_exception=403)
 def add_student():
-    if request.method == 'POST':
-        nama = request.form['nama']
-        kelas = request.form['kelas']
-        student = Student(nama=nama, kelas=kelas)
+    form = StudentForm()
+    if form.validate_on_submit():
+        student = Student(nama=form.nama.data, kelas=form.kelas.data)
         db.session.add(student)
         db.session.commit()
         app.logger.info(f'User {current_user.username} added student {student.nama}')
         return redirect(url_for('students'))
-    return render_template('add_student.html')
+    return render_template('add_student.html', form=form)
 
 @app.route('/student/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @walikelas_permission.require(http_exception=403)
 def edit_student(id):
     student = Student.query.get_or_404(id)
-    if request.method == 'POST':
-        student.nama = request.form['nama']
-        student.kelas = request.form['kelas']
+    form = StudentForm()
+    if form.validate_on_submit():
+        student.nama = form.nama.data
+        student.kelas = form.kelas.data
         db.session.commit()
         app.logger.info(f'User {current_user.username} edited student {student.nama}')
         return redirect(url_for('students'))
-    return render_template('edit_student.html', student=student)
+    form.nama.data = student.nama
+    form.kelas.data = student.kelas
+    return render_template('edit_student.html', form=form)
 
 @app.route('/student/delete/<int:id>', methods=['POST'])
 @login_required
@@ -329,7 +334,22 @@ class StudentAPI(Resource):
 
 api.add_resource(StudentAPI, '/api/students', '/api/students/<int:student_id>')
 
-@app.route('/upload', methods=['POST'])
+def send_telegram_message(chat_id, message):
+    bot.send_message(chat_id=chat_id, text=message)
+
+def check_absence_and_notify():
+    students = Student.query.all()
+    threshold = 3  # Jumlah absen yang memicu notifikasi
+    for student in students:
+        absences = Attendance.query.filter_by(student_id=student.id, status='A').count()
+        if absences >= threshold:
+            send_telegram_message(
+                chat_id='your-chat-id',  # Ganti dengan chat ID penerima
+                message=f'Siswa {student.nama} telah absen sebanyak {absences} kali.'
+            )
+
+# Endpoint untuk mengunggah file Excel dengan data siswa
+@app.route('/upload_students', methods=['POST'])
 @login_required
 @walikelas_permission.require(http_exception=403)
 def upload_students():
@@ -341,19 +361,49 @@ def upload_students():
         flash('No selected file', 'danger')
         return redirect(url_for('students'))
     if file and allowed_file(file.filename):
-        df = pd.read_excel(file)
-        for _, row in df.iterrows():
-            student = Student(nama=row['Nama'], kelas=row['Kelas'])
-            db.session.add(student)
-        db.session.commit()
-        flash('File uploaded successfully', 'success')
-        return redirect(url_for('students'))
-    else:
-        flash('Invalid file format', 'danger')
-        return redirect(url_for('students'))
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        try:
+            df = pd.read_excel(file_path)
+            for _, row in df.iterrows():
+                student = Student(nama=row['Nama'], kelas=row['Kelas'])
+                db.session.add(student)
+            db.session.commit()
+            flash('Students successfully uploaded', 'success')
+        except Exception as e:
+            flash(f'Error processing file: {str(e)}', 'danger')
+    return redirect(url_for('students'))
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xls', 'xlsx'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx'}
+
+@app.route('/attendance_chart')
+@login_required
+@walikelas_permission.union(sekretaris_permission).require(http_exception=403)
+def attendance_chart_page():
+    return render_template('attendance_chart.html')
+
+@app.route('/api/attendance_data', methods=['GET'])
+@login_required
+@walikelas_permission.union(sekretaris_permission).require(http_exception=403)
+def attendance_data():
+    students = Student.query.all()
+    dates = sorted(list(set(attendance.tanggal for attendance in Attendance.query.all())))
+
+    data = {
+        'dates': [date.strftime('%Y-%m-%d') for date in dates],
+        'attendance': []
+    }
+
+    for student in students:
+        attendance_counts = [Attendance.query.filter_by(student_id=student.id, tanggal=date).count() for date in dates]
+        data['attendance'].append({
+            'name': student.nama,
+            'counts': attendance_counts
+        })
+
+    return jsonify(data)
 
 if __name__ == '__main__':
     app.run(debug=True)
