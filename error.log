@@ -45,3 +45,13 @@ Unhandled Exception: 'datetime' is undefined
 Unhandled Exception: 'datetime' is undefined
 Unhandled Exception: 'models.Student object' has no attribute 'total_attendance_by_day'
 Unhandled Exception: 'models.Student object' has no attribute 'total_attendance_by_day'
+Unhandled Exception: Could not build url for endpoint 'upload'. Did you mean 'upload_students' instead?
+Unhandled Exception: Could not build url for endpoint 'upload'. Did you mean 'upload_students' instead?
+Unhandled Exception: Could not build url for endpoint 'upload'. Did you mean 'upload_students' instead?
+Unhandled Exception: Could not build url for endpoint 'upload'. Did you mean 'upload_students' instead?
+Unhandled Exception: Could not build url for endpoint 'upload'. Did you mean 'upload_students' instead?
+Unhandled Exception: Could not build url for endpoint 'upload'. Did you mean 'upload_students' instead?
+Unhandled Exception: (sqlite3.IntegrityError) NOT NULL constraint failed: attendance.student_id
+[SQL: UPDATE attendance SET student_id=? WHERE attendance.id = ?]
+[parameters: [(None, 3), (None, 5), (None, 7), (None, 9), (None, 11)]]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)

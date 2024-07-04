@@ -29,7 +29,6 @@ if not app.debug:
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['UPLOAD_FOLDER'] = 'uploads'  # Folder untuk menyimpan file yang diupload
 db.init_app(app)
 
 login_manager = LoginManager(app)
@@ -330,38 +329,31 @@ class StudentAPI(Resource):
 
 api.add_resource(StudentAPI, '/api/students', '/api/students/<int:student_id>')
 
-# Endpoint untuk meng-upload file Excel
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['POST'])
 @login_required
 @walikelas_permission.require(http_exception=403)
-def upload():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part', 'danger')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file', 'danger')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            import_students_from_excel(filepath)
-            flash('File successfully uploaded and data imported', 'success')
-            app.logger.info(f'User {current_user.username} uploaded and imported data from {filename}')
-            return redirect(url_for('students'))
-    return render_template('upload.html')
+def upload_students():
+    if 'file' not in request.files:
+        flash('No file part', 'danger')
+        return redirect(url_for('students'))
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file', 'danger')
+        return redirect(url_for('students'))
+    if file and allowed_file(file.filename):
+        df = pd.read_excel(file)
+        for _, row in df.iterrows():
+            student = Student(nama=row['Nama'], kelas=row['Kelas'])
+            db.session.add(student)
+        db.session.commit()
+        flash('File uploaded successfully', 'success')
+        return redirect(url_for('students'))
+    else:
+        flash('Invalid file format', 'danger')
+        return redirect(url_for('students'))
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xls', 'xlsx'}
-
-def import_students_from_excel(filepath):
-    df = pd.read_excel(filepath)
-    for _, row in df.iterrows():
-        student = Student(nama=row['Nama'], kelas=row['Kelas'])
-        db.session.add(student)
-    db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True)

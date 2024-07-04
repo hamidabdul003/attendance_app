@@ -1,66 +1,81 @@
 {% extends "base.html" %}
 
+{% block title %}Daftar Siswa{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Daftar Siswa</h2>
-    <div class="mb-3">
-        <a href="{{ url_for('students', show_all='true') }}" class="btn btn-primary">Show All</a>
-        <a href="{{ url_for('students') }}" class="btn btn-secondary">Show Paginated</a>
-    </div>
-    <form class="form-inline mb-3" method="get" action="{{ url_for('students') }}">
-        <input type="text" name="search" class="form-control mr-2" placeholder="Search" value="{{ search_query }}">
-        <button type="submit" class="btn btn-outline-success">Search</button>
-        <a href="{{ url_for('students') }}" class="btn btn-outline-danger ml-2">Clear</a>
+    <h1 class="text-center">Daftar Siswa</h1>
+    <form method="get" action="{{ url_for('students') }}" class="form-inline mb-3">
+        <input type="text" name="search" class="form-control" placeholder="Cari siswa..." value="{{ search_query }}">
+        <button type="submit" class="btn btn-primary ml-2">Cari</button>
+        <a href="{{ url_for('students', show_all=not show_all) }}" class="btn btn-secondary ml-2">
+            {{ 'Tampilkan Semua' if not show_all else 'Tampilkan Per Halaman' }}
+        </a>
     </form>
     <table class="table table-bordered">
         <thead>
             <tr>
+                <th>No</th>
                 <th>Nama</th>
                 <th>Kelas</th>
-                <th>Total Kehadiran Bulan Ini</th>
-                {% if current_user.role == 'walikelas' %}
                 <th>Aksi</th>
-                {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for student in students %}
             <tr>
+                <td>{{ loop.index }}</td>
                 <td>{{ student.nama }}</td>
                 <td>{{ student.kelas }}</td>
-                <td>{{ total_attendance(student.id) }}</td>
-                {% if current_user.role == 'walikelas' %}
                 <td>
                     <a href="{{ url_for('edit_student', id=student.id) }}" class="btn btn-warning btn-sm">Edit</a>
                     <form action="{{ url_for('delete_student', id=student.id) }}" method="post" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus siswa ini?')">Delete</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
                 </td>
-                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% if not show_all %}
+    {% if pagination.pages > 1 %}
     <nav aria-label="Page navigation">
-        <ul class="pagination">
-            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('students', page=pagination.prev_num, search=search_query) }}" aria-label="Previous">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('students', page=pagination.prev_num, search=search_query, show_all=show_all) }}" aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                 </a>
             </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&laquo;</span>
+            </li>
+            {% endif %}
             {% for page_num in pagination.iter_pages() %}
             <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('students', page=page_num, search=search_query) }}">{{ page_num }}</a>
+                <a class="page-link" href="{{ url_for('students', page=page_num, search=search_query, show_all=show_all) }}">{{ page_num }}</a>
             </li>
             {% endfor %}
-            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('students', page=pagination.next_num, search=search_query) }}" aria-label="Next">
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('students', page=pagination.next_num, search=search_query, show_all=show_all) }}" aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                 </a>
             </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&raquo;</span>
+            </li>
+            {% endif %}
         </ul>
     </nav>
     {% endif %}
-</div>
+    
+    <form action="{{ url_for('upload_students') }}" method="post" enctype="multipart/form-data" class="mt-4">
+        <div class="form-group">
+            <p>Silakan unggah file Excel dengan format yang benar untuk mengimpor data siswa. Contoh format dapat dilihat di <a href="{{ url_for('static', filename='template_siswa.xlsx') }}">sini</a>.</p>
+            <label for="file">Upload Daftar Siswa (Excel):</label>
+            <input type="file" name="file" id="file" class="form-control-file">
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+    </form>
 {% endblock %}
