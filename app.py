@@ -13,8 +13,9 @@ from flask_restful import Api, Resource, reqparse
 from werkzeug.utils import secure_filename
 from telegram import Bot
 import pandas as pd
+from sqlalchemy import event
 import matplotlib.pyplot as plt
-import logging, pdfkit, calendar, os, io
+import logging, pdfkit, calendar, os, io, json
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas  # Tambahkan ini
 
 app = Flask(__name__)
@@ -404,6 +405,56 @@ def attendance_data():
         })
 
     return jsonify(data)
+
+@app.route('/audit_log')
+@login_required
+@walikelas_permission.union(sekretaris_permission).require(http_exception=403)
+def audit_log():
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
+    return render_template('audit_log.html', logs=logs)
+
+def after_insert(mapper, connection, target):
+    changes = {c.name: str(getattr(target, c.name)) for c in target.__table__.columns}
+    audit_log = AuditLog(
+        action='insert',
+        model=target.__tablename__,
+        model_id=target.id,
+        changes=json.dumps(changes),
+        user_id=current_user.id if current_user.is_authenticated else None
+    )
+    db.session.add(audit_log)
+    db.session.commit()
+
+def after_update(mapper, connection, target):
+    state = db.inspect(target)
+    changes = {attr.key: [str(state.attrs[attr.key].history.old), str(state.attrs[attr.key].history.new)]
+               for attr in state.attrs if attr.history.has_changes()}
+    audit_log = AuditLog(
+        action='update',
+        model=target.__tablename__,
+        model_id=target.id,
+        changes=json.dumps(changes),
+        user_id=current_user.id if current_user.is_authenticated else None
+    )
+    db.session.add(audit_log)
+    db.session.commit()
+
+def after_delete(mapper, connection, target):
+    changes = {c.name: str(getattr(target, c.name)) for c in target.__table__.columns}
+    audit_log = AuditLog(
+        action='delete',
+        model=target.__tablename__,
+        model_id=target.id,
+        changes=json.dumps(changes),
+        user_id=current_user.id if current_user.is_authenticated else None
+    )
+    db.session.add(audit_log)
+    db.session.commit()
+
+for cls in [Student, Attendance, User]:  # Daftar model yang akan diaudit
+    event.listen(cls, 'after_insert', after_insert)
+    event.listen(cls, 'after_update', after_update)
+    event.listen(cls, 'after_delete', after_delete)
 
 if __name__ == '__main__':
     app.run(debug=True)

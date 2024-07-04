@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from sqlalchemy import event
 
 db = SQLAlchemy()
 
@@ -46,3 +47,15 @@ class User(UserMixin, db.Model):
     
     def has_role(self, role):
         return self.role == role
+
+class AuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(50))
+    model = db.Column(db.String(50))
+    model_id = db.Column(db.Integer)
+    changes = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return f'<AuditLog {self.action} on {self.model} id {self.model_id}>'
