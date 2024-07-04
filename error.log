@@ -29,3 +29,19 @@ Unhandled Exception: name 'jsonify' is not defined
 Unhandled Exception: name 'jsonify' is not defined
 Unhandled Exception: name 'jsonify' is not defined
 Unhandled Exception: name 'jsonify' is not defined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'datetime' is undefined
+Unhandled Exception: 'models.Student object' has no attribute 'total_attendance_by_day'
+Unhandled Exception: 'models.Student object' has no attribute 'total_attendance_by_day'

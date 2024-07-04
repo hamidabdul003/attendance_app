@@ -1,36 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}Rekap Kehadiran Bulanan{% endblock %}
+{% block title %}Total Rekap Absensi Bulanan{% endblock %}
 
 {% block content %}
-    <h1 class="text-center mt-4">Rekap Kehadiran Bulanan</h1>
-    <h4 class="text-center mb-4">{{ month_name }} {{ year }}</h4>
-    <form method="get" class="form-inline justify-content-center mb-4">
+    <h1 class="text-center">Total Rekap Absensi Bulanan</h1>
+    <form method="get" class="form-inline mb-3">
         <div class="form-group mr-2">
             <label for="year" class="mr-2">Tahun:</label>
-            <select name="year" id="year" class="form-control">
-                {% for y in range(2020, datetime.now().year + 1) %}
-                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                {% endfor %}
-            </select>
+            <input type="number" id="year" name="year" class="form-control" value="{{ year }}">
         </div>
         <div class="form-group mr-2">
             <label for="month" class="mr-2">Bulan:</label>
-            <select name="month" id="month" class="form-control">
+            <select id="month" name="month" class="form-control">
                 {% for i in range(1, 13) %}
-                    <option value="{{ i }}" {% if i == month %}selected{% endif %}>{{ calendar.month_name[i] }}</option>
+                <option value="{{ i }}" {% if i == month %}selected{% endif %}>{{ calendar.month_name[i] }}</option>
                 {% endfor %}
             </select>
         </div>
         <button type="submit" class="btn btn-primary">Tampilkan</button>
     </form>
-    <table class="table table-bordered">
+    <h2 class="text-center">Bulan: {{ month_name }}, Tahun: {{ year }}</h2>
+    <table class="table table-bordered mt-4">
         <thead>
             <tr>
                 <th>No</th>
                 <th>Nama</th>
                 <th>Kelas</th>
-                <th>Total Kehadiran</th>
+                <th>Total Hadir</th>
+                <th>Total Alfa</th>
+                <th>Total Izin</th>
+                <th>Total Sakit</th>
             </tr>
         </thead>
         <tbody>
@@ -39,12 +38,14 @@
                 <td>{{ loop.index }}</td>
                 <td>{{ student.nama }}</td>
                 <td>{{ student.kelas }}</td>
-                <td>{{ totals[student.id] }}</td>
+                <td>{{ totals[student.id][0] }}</td>
+                <td>{{ totals[student.id][1] }}</td>
+                <td>{{ totals[student.id][2] }}</td>
+                <td>{{ totals[student.id][3] }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <div class="d-flex justify-content-center">
-        <a href="{{ url_for('rekap_pdf', year=year, month=month) }}" class="btn btn-primary">Download PDF</a>
-    </div>
+    <a href="{{ url_for('rekap_pdf', year=year, month=month) }}" class="btn btn-primary mt-3">Print to PDF</a>
+    <a href="{{ url_for('index') }}" class="btn btn-link mt-3">Kembali</a>
 {% endblock %}
