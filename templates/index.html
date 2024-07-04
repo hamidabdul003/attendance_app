@@ -3,9 +3,9 @@
 {% block title %}Formulir Absensi{% endblock %}
 
 {% block content %}
-    <h1 class="text-center">Formulir Absensi Kelas XII TE</h1>
-    <p class="text-center">Hari ini: {{ today.strftime('%A, %d %B %Y') }}</p>
-    <form method="post" class="mt-4">
+    <h1 class="text-center mt-4">Formulir Absensi Kelas XII TE</h1>
+    <h4 class="text-center mb-4">{{ today.strftime('%A, %d %B %Y') }}</h4>
+    <form method="post">
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -41,7 +41,11 @@
                 {% endfor %}
             </tbody>
         </table>
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <div class="d-flex justify-content-center">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
     </form>
-    <a href="{{ url_for('rekap') }}" class="btn btn-link mt-3">Lihat Rekap</a>
+    <div class="d-flex justify-content-center mt-3">
+        <a href="{{ url_for('rekap') }}" class="btn btn-link">Lihat Rekap</a>
+    </div>
 {% endblock %}

@@ -1,34 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Rekap Absensi{% endblock %}
+{% block title %}Rekap Kehadiran Harian{% endblock %}
 
 {% block content %}
-    <h1 class="text-center">Rekap Absensi</h1>
-    <form method="get" class="form-inline mb-3">
-        <div class="form-group mr-2">
-            <label for="date" class="mr-2">Tanggal:</label>
-            <input type="date" id="date" name="date" class="form-control" value="{{ date }}">
-        </div>
-        <button type="submit" class="btn btn-primary">Tampilkan</button>
-    </form>
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-info">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    {% if totals %}
-        <table class="table table-bordered mt-4">
+    <h1 class="text-center mt-4">Rekap Kehadiran Harian</h1>
+    <h4 class="text-center mb-4">{{ date.strftime('%A, %d %B %Y') }}</h4>
+    <form method="post">
+        <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>No</th>
                     <th>Nama</th>
                     <th>Kelas</th>
-                    <th>Total Hadir</th>
-                    <th>Total Alfa</th>
-                    <th>Total Izin</th>
-                    <th>Total Sakit</th>
+                    <th>Status Kehadiran</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,16 +21,30 @@
                     <td>{{ loop.index }}</td>
                     <td>{{ student.nama }}</td>
                     <td>{{ student.kelas }}</td>
-                    <td>{{ totals[student.id][0] }}</td>
-                    <td>{{ totals[student.id][1] }}</td>
-                    <td>{{ totals[student.id][2] }}</td>
-                    <td>{{ totals[student.id][3] }}</td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="status-{{ student.id }}" value="H" {% if student.total_attendance_by_day(date) == 'H' %}checked{% endif %}>
+                            <label class="form-check-label">Hadir</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="status-{{ student.id }}" value="A" {% if student.total_attendance_by_day(date) == 'A' %}checked{% endif %}>
+                            <label class="form-check-label">Tanpa Keterangan</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="status-{{ student.id }}" value="I" {% if student.total_attendance_by_day(date) == 'I' %}checked{% endif %}>
+                            <label class="form-check-label">Izin</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="status-{{ student.id }}" value="S" {% if student.total_attendance_by_day(date) == 'S' %}checked{% endif %}>
+                            <label class="form-check-label">Sakit</label>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p class="text-center">Tidak ada data kehadiran untuk tanggal ini.</p>
-    {% endif %}
-    <a href="{{ url_for('index') }}" class="btn btn-link mt-3">Kembali</a>
+        <div class="d-flex justify-content-center">
+            <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+    </form>
 {% endblock %}
