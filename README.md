@@ -1,5 +1,3 @@
-Berikut adalah contoh file README yang dapat Anda gunakan untuk aplikasi Anda:
-
 ```markdown
 # Attendance App
 
@@ -166,5 +164,3 @@ Proyek ini dilisensikan di bawah lisensi MIT.
 Untuk pertanyaan atau bantuan lebih lanjut, silakan hubungi:
 - Email: hamidabdul003@gmail.com
 ```
-
-Pastikan Anda menyesuaikan path dan konfigurasi sesuai dengan kebutuhan dan lingkungan Anda.
