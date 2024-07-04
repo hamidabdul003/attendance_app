@@ -17,7 +17,9 @@
                 <th>No</th>
                 <th>Nama</th>
                 <th>Kelas</th>
+                {% if current_user.role == 'walikelas' %}
                 <th>Aksi</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -26,12 +28,14 @@
                 <td>{{ loop.index }}</td>
                 <td>{{ student.nama }}</td>
                 <td>{{ student.kelas }}</td>
+                {% if current_user.role == 'walikelas' %}
                 <td>
                     <a href="{{ url_for('edit_student', id=student.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                    <form action="{{ url_for('delete_student', id=student.id) }}" method="post" style="display:inline;">
+                    <form action="{{ url_for('delete_student', id=student.id) }}" method="post" class="d-inline">
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
                 </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
@@ -70,6 +74,7 @@
     </nav>
     {% endif %}
     
+    {% if current_user.role == 'walikelas' %}
     <form action="{{ url_for('upload_students') }}" method="post" enctype="multipart/form-data" class="mt-4">
         <div class="form-group">
             <p>Silakan unggah file Excel dengan format yang benar untuk mengimpor data siswa. Contoh format dapat dilihat di <a href="{{ url_for('static', filename='template_siswa.xlsx') }}">sini</a>.</p>
@@ -78,4 +83,5 @@
         </div>
         <button type="submit" class="btn btn-primary">Upload</button>
     </form>
+    {% endif %}
 {% endblock %}
