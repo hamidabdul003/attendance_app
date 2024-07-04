@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Upload File Excel{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Upload File Excel</h1>
+<p>Silakan unggah file Excel dengan format yang benar untuk mengimpor data siswa. Contoh format dapat dilihat di <a href="{{ url_for('static', filename='template_siswa.xlsx') }}">sini</a>.</p>
+<form method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="file">Pilih file Excel:</label>
+        <input type="file" name="file" class="form-control" id="file" required>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Upload</button>
+</form>
+{% endblock %}

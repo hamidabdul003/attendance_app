@@ -1,18 +1,21 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed, Identity, AnonymousIdentity, identity_changed
 from datetime import datetime, date
 from models import db, Student, Attendance, User
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Length, ValidationError
+from wtforms.validators import DataRequired, Length, Email, ValidationError
 import logging
 from logging.handlers import RotatingFileHandler
 from sqlalchemy.orm import Session
 import pdfkit
 import calendar
 from werkzeug.exceptions import HTTPException
-from flask_restful import Api, Resource
+from flask_restful import Api, Resource, reqparse
+import pandas as pd
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 api = Api(app)
@@ -26,6 +29,7 @@ if not app.debug:
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['UPLOAD_FOLDER'] = 'uploads'  # Folder untuk menyimpan file yang diupload
 db.init_app(app)
 
 login_manager = LoginManager(app)
@@ -271,28 +275,28 @@ def handle_exception(e):
 @login_required
 @walikelas_permission.require(http_exception=403)
 def add_student():
-    form = StudentForm()
-    if form.validate_on_submit():
-        student = Student(nama=form.nama.data, kelas=form.kelas.data)
+    if request.method == 'POST':
+        nama = request.form['nama']
+        kelas = request.form['kelas']
+        student = Student(nama=nama, kelas=kelas)
         db.session.add(student)
         db.session.commit()
         app.logger.info(f'User {current_user.username} added student {student.nama}')
         return redirect(url_for('students'))
-    return render_template('add_student.html', form=form)
+    return render_template('add_student.html')
 
 @app.route('/student/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @walikelas_permission.require(http_exception=403)
 def edit_student(id):
     student = Student.query.get_or_404(id)
-    form = StudentForm(obj=student)
-    if form.validate_on_submit():
-        student.nama = form.nama.data
-        student.kelas = form.kelas.data
+    if request.method == 'POST':
+        student.nama = request.form['nama']
+        student.kelas = request.form['kelas']
         db.session.commit()
         app.logger.info(f'User {current_user.username} edited student {student.nama}')
         return redirect(url_for('students'))
-    return render_template('edit_student.html', student=student, form=form)
+    return render_template('edit_student.html', student=student)
 
 @app.route('/student/delete/<int:id>', methods=['POST'])
 @login_required
@@ -325,6 +329,39 @@ class StudentAPI(Resource):
             } for student in students])
 
 api.add_resource(StudentAPI, '/api/students', '/api/students/<int:student_id>')
+
+# Endpoint untuk meng-upload file Excel
+@app.route('/upload', methods=['GET', 'POST'])
+@login_required
+@walikelas_permission.require(http_exception=403)
+def upload():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            import_students_from_excel(filepath)
+            flash('File successfully uploaded and data imported', 'success')
+            app.logger.info(f'User {current_user.username} uploaded and imported data from {filename}')
+            return redirect(url_for('students'))
+    return render_template('upload.html')
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xls', 'xlsx'}
+
+def import_students_from_excel(filepath):
+    df = pd.read_excel(filepath)
+    for _, row in df.iterrows():
+        student = Student(nama=row['Nama'], kelas=row['Kelas'])
+        db.session.add(student)
+    db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True)
