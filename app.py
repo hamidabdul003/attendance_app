@@ -105,7 +105,7 @@ def login():
         else:
             flash('Invalid username or password', 'danger')
             app.logger.warning(f'Failed login attempt for username: {form.username.data}')
-    return render_template('login.html', form=form)
+    return render_template('auth/login.html', form=form)
 
 @app.route('/logout')
 @login_required
@@ -124,6 +124,7 @@ def index():
     students = Student.query.all()
     today = date.today()
     if request.method == 'POST':
+        # Hapus data absensi sebelumnya
         Attendance.query.filter_by(tanggal=today).delete()
         db.session.commit()
         app.logger.info(f'User {current_user.username} cleared attendance for today')
@@ -138,9 +139,8 @@ def index():
             db.session.add(attendance)
         db.session.commit()
         app.logger.info(f'User {current_user.username} updated attendance for today')
-        check_absence_and_notify()
         return redirect(url_for('rekap'))
-    return render_template('index.html', students=students, today=today)
+    return render_template('attendance/index.html', students=students, today=today)
 
 @app.route('/rekap', methods=['GET', 'POST'])
 def rekap():
@@ -172,7 +172,7 @@ def rekap():
     else:
         totals = {student.id: student.total_attendance_by_month(date_value.year, date_value.month) for student in students}
 
-    return render_template('rekap.html', students=students, totals=totals, date=date_value)
+    return render_template('attendance/rekap.html', students=students, totals=totals, date=date_value)
 
 @app.route('/total_rekap', methods=['GET'])
 def total_rekap():
@@ -181,7 +181,7 @@ def total_rekap():
     month = request.args.get('month', datetime.now().month, type=int)
     month_name = calendar.month_name[month]
     totals = {student.id: student.total_attendance_by_month(year, month) for student in students}
-    return render_template('total_rekap.html', students=students, totals=totals, year=year, month=month, month_name=month_name, calendar=calendar)
+    return render_template('attendance/total_rekap.html', students=students, totals=totals, year=year, month=month, month_name=month_name, calendar=calendar)
 
 @app.route('/rekap/pdf', methods=['GET'])
 def rekap_pdf():
@@ -189,7 +189,7 @@ def rekap_pdf():
     year = request.args.get('year', datetime.now().year, type=int)
     month = request.args.get('month', datetime.now().month, type=int)
     totals = {student.id: student.total_attendance_by_month(year, month) for student in students}
-    rendered = render_template('total_rekap_pdf.html', students=students, totals=totals, year=year, month=month, calendar=calendar)
+    rendered = render_template('attendance/total_rekap_pdf.html', students=students, totals=totals, year=year, month=month, calendar=calendar)
 
     path_to_wkhtmltopdf = '/usr/local/bin/wkhtmltopdf'  # Sesuaikan dengan lokasi wkhtmltopdf di sistem Anda
     config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
@@ -211,7 +211,7 @@ def update(id):
         db.session.commit()
         app.logger.info(f'User {current_user.username} updated attendance for student {attendance.student_id} on {attendance.tanggal}')
         return redirect(url_for('rekap'))
-    return render_template('update.html', attendance=attendance)
+    return render_template('attendance/update.html', attendance=attendance)
 
 @app.route('/delete_all', methods=['POST'])
 @login_required
@@ -238,11 +238,11 @@ def students():
     if show_all:
         students = students_query.all()
         app.logger.info(f'User {current_user.username} viewed all students')
-        return render_template('students.html', students=students, show_all=show_all, search_query=search_query)
+        return render_template('student/students.html', students=students, show_all=show_all, search_query=search_query)
     else:
         students = students_query.paginate(page=page, per_page=10)
         app.logger.info(f'User {current_user.username} viewed students page {page}')
-        return render_template('students.html', students=students.items, pagination=students, search_query=search_query, show_all=show_all)
+        return render_template('student/students.html', students=students.items, pagination=students, search_query=search_query, show_all=show_all)
 
 def get_total_attendance(student_id, year, month):
     return Attendance.query.filter_by(student_id=student_id).filter(db.extract('year', Attendance.tanggal) == year, db.extract('month', Attendance.tanggal) == month).count()
@@ -256,13 +256,13 @@ def utility_processor():
 @app.errorhandler(404)
 def page_not_found(e):
     app.logger.warning(f"Page not found: {request.url}")
-    return render_template('404.html'), 404
+    return render_template('error/404.html'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()  # Rollback jika terjadi kesalahan dalam transaksi basis data
     app.logger.error(f"Server error: {str(error)}")
-    return render_template('500.html'), 500
+    return render_template('error/500.html'), 500
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -272,7 +272,7 @@ def handle_exception(e):
 
     # Now you're handling non-HTTP exceptions only
     app.logger.error(f"Unhandled Exception: {str(e)}")
-    return render_template("500.html"), 500
+    return render_template("error/500.html"), 500
 
 @app.route('/student/add', methods=['GET', 'POST'])
 @login_required
@@ -285,7 +285,7 @@ def add_student():
         db.session.commit()
         app.logger.info(f'User {current_user.username} added student {student.nama}')
         return redirect(url_for('students'))
-    return render_template('add_student.html', form=form)
+    return render_template('student/add_student.html', form=form)
 
 @app.route('/student/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -301,7 +301,7 @@ def edit_student(id):
         return redirect(url_for('students'))
     form.nama.data = student.nama
     form.kelas.data = student.kelas
-    return render_template('edit_student.html', form=form)
+    return render_template('student/edit_student.html', form=form)
 
 @app.route('/student/delete/<int:id>', methods=['POST'])
 @login_required
@@ -383,7 +383,7 @@ def allowed_file(filename):
 @login_required
 @walikelas_permission.union(sekretaris_permission).require(http_exception=403)
 def attendance_chart_page():
-    return render_template('attendance_chart.html')
+    return render_template('attendance/attendance_chart.html')
 
 @app.route('/api/attendance_data', methods=['GET'])
 @login_required
@@ -411,7 +411,7 @@ def attendance_data():
 @walikelas_permission.union(sekretaris_permission).require(http_exception=403)
 def audit_log():
     logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
-    return render_template('audit_log.html', logs=logs)
+    return render_template('logs/audit_log.html', logs=logs)
 
 def after_insert(mapper, connection, target):
     changes = {c.name: str(getattr(target, c.name)) for c in target.__table__.columns}
